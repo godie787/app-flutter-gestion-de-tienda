@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "569240920976",
+    "project_id": "re-fashi",
+    "storage_bucket": "re-fashi.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:569240920976:android:7ec66618ca77fc50770915",
+        "android_client_info": {
+          "package_name": "com.diegojorquera.refashion"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOpFNoVnACi9EaiR9ZfO0U_73CCMXiYj4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

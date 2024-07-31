@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 
 class SuperuserBottomNavigationBar extends StatefulWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onItemTapped;
+
+  SuperuserBottomNavigationBar({
+    required this.selectedIndex,
+    required this.onItemTapped,
+  });
+
   @override
   _SuperuserBottomNavigationBarState createState() =>
       _SuperuserBottomNavigationBarState();
@@ -8,16 +16,6 @@ class SuperuserBottomNavigationBar extends StatefulWidget {
 
 class _SuperuserBottomNavigationBarState
     extends State<SuperuserBottomNavigationBar> {
-  int _selectedIndex = 0;
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    // Aquí podrías manejar la navegación entre vistas según el índice seleccionado
-  }
-
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
@@ -25,8 +23,8 @@ class _SuperuserBottomNavigationBarState
       backgroundColor: Colors.white,
       selectedItemColor: Colors.teal,
       unselectedItemColor: Colors.grey,
-      currentIndex: _selectedIndex,
-      onTap: _onItemTapped,
+      currentIndex: widget.selectedIndex,
+      onTap: widget.onItemTapped,
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home),

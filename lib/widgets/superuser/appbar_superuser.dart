@@ -4,7 +4,7 @@ class SuperuserAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: Text('Superuser Panel'),
+      title: Text('Home'),
       backgroundColor: Colors.teal,
     );
   }

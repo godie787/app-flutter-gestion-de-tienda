@@ -2,8 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:re_fashion/widgets/superuser/appbar_superuser.dart';
 import 'package:re_fashion/widgets/superuser/bottom_navigation_bar_superuser.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:re_fashion/screens/options_navigator/add_product_screen.dart';
 
-class SuperuserHome extends StatelessWidget {
+class SuperuserHome extends StatefulWidget {
+  @override
+  _SuperuserHomeState createState() => _SuperuserHomeState();
+}
+
+class _SuperuserHomeState extends State<SuperuserHome> {
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  final List<Widget> _pages = [
+    const Center(child: Text('Bienvenido al panel Superuser!')),
+    const Center(child: Text('Agregar Vendedores')),
+    AddProductScreen(),
+    const Center(child: Text('Vender')),
+    const Center(child: Text('Informes')),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -36,11 +58,14 @@ class SuperuserHome extends StatelessWidget {
       },
       child: Scaffold(
         appBar: SuperuserAppBar(), // AppBar modular
-        body: const Center(
-          child: Text('Bienvenido al panel Superuser!'),
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: _pages,
         ),
-        bottomNavigationBar:
-            SuperuserBottomNavigationBar(), // BottomNavigationBar modular
+        bottomNavigationBar: SuperuserBottomNavigationBar(
+          selectedIndex: _selectedIndex,
+          onItemTapped: _onItemTapped,
+        ),
       ),
     );
   }

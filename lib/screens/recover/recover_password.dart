@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class RecoverPasswordScreen extends StatefulWidget {
+  const RecoverPasswordScreen({Key? key}) : super(key: key);
   @override
-  _RecoverPasswordScreenState createState() => _RecoverPasswordScreenState();
+  RecoverPasswordScreenState createState() => RecoverPasswordScreenState();
 }
 
-class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
+class RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
   final TextEditingController _emailController = TextEditingController();
   String _message = '';
   bool _isLoading = false;

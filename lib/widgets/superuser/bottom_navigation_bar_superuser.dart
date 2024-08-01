@@ -4,17 +4,18 @@ class SuperuserBottomNavigationBar extends StatefulWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemTapped;
 
-  SuperuserBottomNavigationBar({
+  const SuperuserBottomNavigationBar({
     required this.selectedIndex,
     required this.onItemTapped,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
-  _SuperuserBottomNavigationBarState createState() =>
-      _SuperuserBottomNavigationBarState();
+  SuperuserBottomNavigationBarState createState() =>
+      SuperuserBottomNavigationBarState();
 }
 
-class _SuperuserBottomNavigationBarState
+class SuperuserBottomNavigationBarState
     extends State<SuperuserBottomNavigationBar> {
   @override
   Widget build(BuildContext context) {

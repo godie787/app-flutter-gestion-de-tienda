@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:re_fashion/widgets/superuser/appbar_superuser.dart';
 import 'package:re_fashion/widgets/superuser/bottom_navigation_bar_superuser.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:re_fashion/screens/options_navigator/add_product_screen.dart';
+import 'package:re_fashion/screens/options_navigator/add_products/add_product_screen.dart';
 
 class SuperuserHome extends StatefulWidget {
+  const SuperuserHome({Key? key}) : super(key: key);
+
   @override
-  _SuperuserHomeState createState() => _SuperuserHomeState();
+  SuperuserHomeState createState() => SuperuserHomeState();
 }
 
-class _SuperuserHomeState extends State<SuperuserHome> {
+class SuperuserHomeState extends State<SuperuserHome> {
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
@@ -21,7 +23,7 @@ class _SuperuserHomeState extends State<SuperuserHome> {
   final List<Widget> _pages = [
     const Center(child: Text('Bienvenido al panel Superuser!')),
     const Center(child: Text('Agregar Vendedores')),
-    AddProductScreen(),
+    const AddProductScreen(),
     const Center(child: Text('Vender')),
     const Center(child: Text('Informes')),
   ];

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 
 class SuperuserAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const SuperuserAppBar({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: Text('Home'),
+      title: const Text('Home'),
       backgroundColor: Colors.teal,
     );
   }
 
   @override
-  Size get preferredSize => Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

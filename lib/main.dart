@@ -11,23 +11,26 @@ void main() async {
   await Firebase.initializeApp();
 
   // Crear una instancia de DatabaseService
-  //DatabaseService dbService = DatabaseService();
+  // DatabaseService dbService = DatabaseService();
 
   // Llamar a las funciones para crear categorías y productos
-  //await dbService.createCategories();
-  //await dbService.createProductsCollection();
+  // await dbService.createCategories();
+  // await dbService.createProductsCollection();
 
   // Si tienes otras inicializaciones como createRoles y registerUser
   // Puedes llamarlas aquí también
   // await createRoles();
   // await registerUser();
 
-  runApp(MyApp());
+  runApp(const MyApp()); // Aquí se agrega 'const'
 }
 
-
-
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key})
+      : super(
+            key:
+                key); //este error es una sigerencia que no está bien, ya que como lo hice, es como flutter lo recomienda
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -35,29 +38,33 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: LoginScreen(),
+      home: const LoginScreen(),
     );
   }
 }
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({Key? key}) : super(key: key);
+
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  LoginScreenState createState() => LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   String _errorMessage = '';
 
   Future<void> _login() async {
+    // Cambiar el estado a cargando
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
 
     try {
+      // Intentar iniciar sesión con Firebase
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
               email: _emailController.text, password: _passwordController.text);
@@ -70,23 +77,29 @@ class _LoginScreenState extends State<LoginScreen> {
 
       String roleId = userDoc.get('roleId');
 
+      if (!mounted) return; // Asegurarse de que el widget sigue montado
+
       if (roleId == '1') {
         // Si es superuser, redirigir a la pantalla específica de superuser
         Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => SuperuserHome()));
+            MaterialPageRoute(builder: (context) => const SuperuserHome()));
       } else {
         // Redirigir a otra pantalla o manejar otros roles
         Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => SuperuserHome()));
+            MaterialPageRoute(builder: (context) => const SuperuserHome()));
       }
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message ?? "Error al iniciar sesión";
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message ?? "Error al iniciar sesión";
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -141,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => RecoverPasswordScreen(),
+                      builder: (context) => const RecoverPasswordScreen(),
                     ),
                   );
                 },

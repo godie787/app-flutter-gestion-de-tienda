@@ -4,53 +4,28 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'screens/superuser/home_superuser.dart';
 import 'screens/recover/recover_password.dart'; // Importa la nueva pantalla
+//import 'package:re_fashion/services/database_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  //createRoles();
-  //registerUser();
+  // Crear una instancia de DatabaseService
+  //DatabaseService dbService = DatabaseService();
+
+  // Llamar a las funciones para crear categorías y productos
+  //await dbService.createCategories();
+  //await dbService.createProductsCollection();
+
+  // Si tienes otras inicializaciones como createRoles y registerUser
+  // Puedes llamarlas aquí también
+  // await createRoles();
+  // await registerUser();
+
   runApp(MyApp());
 }
 
-/*Future<void> createRoles() async {
-  await FirebaseFirestore.instance.collection('Roles').doc('1').set({
-    'name': 'superuser',
-  });
 
-  await FirebaseFirestore.instance.collection('Roles').doc('2').set({
-    'name': 'vendedor',
-  });
-
-  print("Roles creados exitosamente");
-}*/
-
-/*
-Future<void> registerUser() async {
-  try {
-    // Crear usuario en Firebase Authentication
-    UserCredential userCredential =
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
-      email: "diego.jorqueras@usm.cl",
-      password: "diegomatias",
-    );
-
-    // Obtener el UID del usuario creado
-    String uid = userCredential.user!.uid;
-
-    // Almacenar información adicional en Firestore
-    await FirebaseFirestore.instance.collection('Users').doc(uid).set({
-      'name': 'Diego',
-      'email': 'diego.jorqueras@usm.cl',
-      'roleId': '1', // Referencia al rol de superuser
-    });
-
-    print("Usuario registrado exitosamente");
-  } catch (e) {
-    print("Error al registrar usuario: $e");
-  }
-}*/
 
 class MyApp extends StatelessWidget {
   @override

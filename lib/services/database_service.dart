@@ -5,6 +5,218 @@ import 'package:flutter/material.dart';
 class DatabaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  Future<void> saveDailyReport(DateTime date, Map<String, dynamic> reportData) async {
+    await FirebaseFirestore.instance.collection('DailyReports').add({
+      'date': date,
+      'reportData': reportData,
+      'createdAt': Timestamp.now(),
+    });
+  }
+
+  // Método para generar el informe diario
+  Future<Map<String, dynamic>?> generateDailyReport() async {
+    try {
+      // Obtener el estado actual de la caja (último cierre)
+      QuerySnapshot cajaSnapshot = await _firestore
+          .collection('Caja')
+          .where('status', isEqualTo: 'closed')
+          .orderBy('date', descending: true)
+          .limit(1)
+          .get();
+
+      if (cajaSnapshot.docs.isEmpty) {
+        print('No se encontró un cierre de caja reciente.');
+        return null;
+      }
+
+      var cajaData = cajaSnapshot.docs.first.data() as Map<String, dynamic>;
+      Timestamp openTime = cajaData['openTime'];
+      Timestamp closeTime = cajaData['closeTime'];
+
+      // Consultar las ventas realizadas en el periodo de la caja abierta
+      QuerySnapshot ventasSnapshot = await _firestore
+          .collection('Ventas')
+          .where('createdAt', isGreaterThanOrEqualTo: openTime)
+          .where('createdAt', isLessThanOrEqualTo: closeTime)
+          .get();
+
+      double totalVentas = 0;
+      int cantidadProductosVendidos = 0;
+
+      for (var doc in ventasSnapshot.docs) {
+        var ventaData = doc.data() as Map<String, dynamic>;
+        totalVentas += ventaData['total'];
+        QuerySnapshot productosVendidosSnapshot = await doc.reference
+            .collection('ProductosVendidos')
+            .get();
+        cantidadProductosVendidos += productosVendidosSnapshot.size;
+      }
+
+      // Datos del informe diario
+      Map<String, dynamic> reportData = {
+        'date': DateTime.now(),
+        'totalVentas': totalVentas,
+        'cantidadProductosVendidos': cantidadProductosVendidos,
+      };
+
+      return reportData;
+    } catch (e) {
+      print('Error al generar el informe diario: $e');
+      return null;
+    }
+  }
+  // Función para abrir caja
+  Future<void> openCaja() async {
+    try {
+      // Crear un documento en la colección "Caja" con la fecha de hoy y la hora de apertura
+      await _firestore.collection('Caja').add({
+        'date': Timestamp.now(), // Fecha y hora actuales
+        'openTime': Timestamp.now(), // Hora de apertura
+        'status': 'open', // Estado de la caja
+        'userId': FirebaseAuth.instance.currentUser!.uid, // ID del usuario que abrió la caja
+      });
+
+      debugPrint('Caja abierta exitosamente.');
+    } catch (e) {
+      debugPrint('Error al abrir caja: $e');
+    }
+  }
+
+  // Función para cerrar caja
+  Future<void> closeCaja() async {
+    try {
+      // Buscar el documento de caja abierto para hoy y actualizarlo con la hora de cierre
+      QuerySnapshot cajaQuery = await _firestore
+          .collection('Caja')
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime.now().subtract(const Duration(hours: 24))))
+          .where('status', isEqualTo: 'open')
+          .limit(1)
+          .get();
+
+      if (cajaQuery.docs.isNotEmpty) {
+        DocumentReference cajaRef = cajaQuery.docs.first.reference;
+        await cajaRef.update({
+          'closeTime': Timestamp.now(), // Hora de cierre
+          'status': 'closed', // Estado de la caja
+        });
+
+        debugPrint('Caja cerrada exitosamente.');
+      } else {
+        debugPrint('No se encontró una caja abierta para cerrar.');
+      }
+    } catch (e) {
+      debugPrint('Error al cerrar caja: $e');
+    }
+  }
+
+  Future<void> createVenta(
+    List<Map<String, dynamic>> productos, double total, String userId) async {
+      try {
+        // Crear un documento en la colección "Ventas" con el ID del usuario, total y fecha de creación
+        DocumentReference ventaRef = await _firestore.collection('Ventas').add({
+          'userId': userId, // ID del usuario que realizó la venta
+          'total': total, // Total de la venta
+          'createdAt': Timestamp.now(), // Fecha y hora de la venta
+        });
+
+        // Para cada producto en la lista, agregar un documento en la subcolección "ProductosVendidos"
+        for (var producto in productos) {
+          print('Agregando producto a la venta: ${producto['nameController'].text}'); // Debug
+          await ventaRef.collection('ProductosVendidos').add({
+            'productId': producto['idController'].text, // ID del producto
+            'name': producto['nameController'].text, // Nombre del producto
+            'salePrice': double.tryParse(producto['salePriceController'].text) ?? 0, // Precio de venta
+          });
+        }
+
+        print('Venta creada y productos asociados exitosamente.');
+      } catch (e) {
+        print('Error al crear la venta: $e');
+      }
+    }
+
+
+  Future<void> processSale(List<Map<String, dynamic>> products) async {
+  try {
+    // Primero actualizamos los productos
+    for (var product in products) {
+      QuerySnapshot querySnapshot = await _firestore
+          .collection('Productos')
+          .where('id', isEqualTo: product['idController'].text)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        DocumentReference documentReference = querySnapshot.docs.first.reference;
+        await documentReference.update({
+          'salePrice': double.tryParse(product['salePriceController'].text) ?? 0,
+          'state': 'Vendido',
+        });
+        print('Producto actualizado exitosamente.');
+      } else {
+        print('Producto no encontrado.');
+      }
+    }
+
+    // Luego, obtenemos el total de la venta
+    double total = products.fold(0, (sum, item) {
+      return sum + (double.tryParse(item['salePriceController'].text) ?? 0);
+    });
+
+    // Obtenemos el ID del usuario actual
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+
+    // Finalmente, creamos la venta y asociamos los productos a la venta
+    await createVenta(products, total, userId);
+    print('Venta creada y productos asociados exitosamente.');
+
+  } catch (e) {
+    print('Error al procesar la venta: $e');
+  }
+}
+
+  Future<Map<String, dynamic>?> getProductById(String productId) async {
+    try {
+      QuerySnapshot querySnapshot = await _firestore
+          .collection('Productos')
+          .where('id', isEqualTo: productId)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        return querySnapshot.docs.first.data() as Map<String, dynamic>;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print('Error al obtener el producto: $e');
+      return null;
+    }
+  }
+
+  Future<void> updateProduct(String productId, double salePrice, String state) async {
+    try {
+      QuerySnapshot querySnapshot = await _firestore
+          .collection('Productos')
+          .where('id', isEqualTo: productId)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        DocumentReference documentReference = querySnapshot.docs.first.reference;
+        await documentReference.update({
+          'salePrice': salePrice,
+          'state': state,
+        });
+        print('Producto actualizado exitosamente.');
+      } else {
+        print('Producto no encontrado.');
+      }
+    } catch (e) {
+      print('Error al actualizar el producto: $e');
+    }
+  }
+  
   Future<List<Map<String, dynamic>>> getCategories() async {
     try {
       final querySnapshot =
@@ -88,6 +300,7 @@ class DatabaseService {
         'subsubcategoryId':
             productData['subsubcategoryId'], // ID de la sub-subcategoría
         'createdAt': productData['createdAt'],
+        'state': productData['state'],
       });
 
       debugPrint('Producto agregado exitosamente');

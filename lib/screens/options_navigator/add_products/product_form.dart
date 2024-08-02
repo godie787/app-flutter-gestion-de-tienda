@@ -1,5 +1,3 @@
-// product_form.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -16,21 +14,33 @@ void showProductForm(BuildContext context, Map<String, dynamic> product,
   TextEditingController salePriceController =
       TextEditingController(text: product['salePrice'].toString());
 
-  String? selectedCategory = product['category'];
-  String? selectedSubcategory = product['subcategory'];
-  String? selectedSubsubcategory = product['subsubcategory'];
+  String? selectedCategory = product['categoryId'];
+  String? selectedSubcategory = product['subcategoryId'];
+  String? selectedSubsubcategory = product['subsubcategoryId'];
+
+  String? selectedState = product['state'] ?? 'Activo';
 
   List<Map<String, dynamic>> subcategories = [];
   List<Map<String, dynamic>> subsubcategories = [];
 
   final DatabaseService _databaseService = DatabaseService();
 
-  // Mapa de iconos representativos
   final Map<String, IconData> categoryIcons = {
     'Ropa': Icons.checkroom,
     'Accesorios': Icons.watch,
     'Zapatos': Icons.shopping_bag,
-    // Añade otros iconos para las demás categorías
+  };
+
+  final Map<String, IconData> stateIcons = {
+    'Activo': Icons.circle,
+    'Vendido': Icons.check_circle,
+    'En revisión': Icons.warning_amber,
+  };
+
+  final Map<String, Color> stateColors = {
+    'Activo': Colors.green,
+    'Vendido': Colors.red,
+    'En revisión': Colors.orange,
   };
 
   Future<void> _scanBarcode(TextEditingController idController) async {
@@ -169,9 +179,9 @@ void showProductForm(BuildContext context, Map<String, dynamic> product,
                               setState(() {});
 
                               // Guarda la selección en el producto
-                              product['category'] = selectedCategory;
-                              product['subcategory'] = selectedSubcategory;
-                              product['subsubcategory'] =
+                              product['categoryId'] = selectedCategory;
+                              product['subcategoryId'] = selectedSubcategory;
+                              product['subsubcategoryId'] =
                                   selectedSubsubcategory;
                             },
                           ),
@@ -225,9 +235,9 @@ void showProductForm(BuildContext context, Map<String, dynamic> product,
                                     setState(() {});
 
                                     // Guarda la selección en el producto
-                                    product['subcategory'] =
+                                    product['subcategoryId'] =
                                         selectedSubcategory;
-                                    product['subsubcategory'] =
+                                    product['subsubcategoryId'] =
                                         selectedSubsubcategory;
                                   },
                                 );
@@ -248,8 +258,8 @@ void showProductForm(BuildContext context, Map<String, dynamic> product,
                                               selectedSubsubcategory)
                                       ? selectedSubsubcategory
                                       : null,
-                                  hint:
-                                      const Text('Selecciona Subsubcategoría'),
+                                  hint: const Text(
+                                      'Selecciona Subsubcategoría'),
                                   icon: const Icon(Icons.arrow_drop_down),
                                   isExpanded: true,
                                   dropdownColor: Colors.white,
@@ -278,12 +288,49 @@ void showProductForm(BuildContext context, Map<String, dynamic> product,
                                     });
 
                                     // Guarda la selección en el producto
-                                    product['subsubcategory'] =
+                                    product['subsubcategoryId'] =
                                         selectedSubsubcategory;
                                   },
                                 );
                               },
                             ),
+                          const SizedBox(height: 10),
+                          DropdownButton<String>(
+                            value: selectedState,
+                            hint: const Text('Selecciona un estado'),
+                            icon: const Icon(Icons.arrow_drop_down),
+                            isExpanded: true,
+                            dropdownColor: Colors.white,
+                            underline: Container(
+                              height: 2,
+                              color: Colors.deepPurpleAccent,
+                            ),
+                            items: stateIcons.keys.map((state) {
+                              return DropdownMenuItem<String>(
+                                value: state,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      stateIcons[state],
+                                      color: stateColors[state],
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(state,
+                                        style: const TextStyle(
+                                            color: Colors.black)),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedState = value;
+                              });
+
+                              // Guarda la selección en el producto
+                              product['state'] = selectedState;
+                            },
+                          ),
                         ],
                       );
                     },
@@ -305,9 +352,10 @@ void showProductForm(BuildContext context, Map<String, dynamic> product,
                     'name': nameController.text,
                     'netPrice': double.tryParse(netPriceController.text) ?? 0,
                     'salePrice': double.tryParse(salePriceController.text) ?? 0,
-                    'category': selectedCategory,
-                    'subcategory': selectedSubcategory,
-                    'subsubcategory': selectedSubsubcategory,
+                    'categoryId': selectedCategory,
+                    'subcategoryId': selectedSubcategory,
+                    'subsubcategoryId': selectedSubsubcategory,
+                    'state': selectedState,
                     'createdAt': Timestamp.now(),
                   });
                   Navigator.of(context).pop();

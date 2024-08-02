@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:re_fashion/screens/options_navigator/home/home_screen.dart';
 import 'package:re_fashion/widgets/superuser/appbar_superuser.dart';
 import 'package:re_fashion/widgets/superuser/bottom_navigation_bar_superuser.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:re_fashion/screens/options_navigator/add_products/add_product_screen.dart';
+import 'package:re_fashion/screens/options_navigator/sell_products/sell_product_screen.dart';
+import 'package:re_fashion/screens/options_navigator/reports/reports_screen.dart';
 
 class SuperuserHome extends StatefulWidget {
   const SuperuserHome({Key? key}) : super(key: key);
@@ -21,11 +24,11 @@ class SuperuserHomeState extends State<SuperuserHome> {
   }
 
   final List<Widget> _pages = [
-    const Center(child: Text('Bienvenido al panel Superuser!')),
+    const HomeScreen(),
     const Center(child: Text('Agregar Vendedores')),
     const AddProductScreen(),
-    const Center(child: Text('Vender')),
-    const Center(child: Text('Informes')),
+    const SellProductScreen(),
+    ReportsScreen(),
   ];
 
   @override

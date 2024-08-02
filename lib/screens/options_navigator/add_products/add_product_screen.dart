@@ -20,22 +20,25 @@ class AddProductScreenState extends State<AddProductScreen> {
       'categoryId': null, // Agregado
       'subcategoryId': null, // Agregado
       'subsubcategoryId': null, // Agregado
+      'state': 'Activo', // Agregado
       'createdAt': Timestamp.now(),
     }
   ];
 
   final DatabaseService _databaseService = DatabaseService();
+  bool _isLoading = false;
 
   void _addNewProductField() {
     setState(() {
       products.add({
         'name': '',
         'id': '',
-        'netPrice': 0.0,
-        'salePrice': 0.0,
+        'netPrice': 0,
+        'salePrice': 0,
         'categoryId': null, // Agregado
         'subcategoryId': null, // Agregado
         'subsubcategoryId': null, // Agregado
+        'state': 'Activo', // Agregado
         'createdAt': Timestamp.now(),
       });
     });
@@ -48,51 +51,75 @@ class AddProductScreenState extends State<AddProductScreen> {
   }
 
   Future<void> _saveProducts() async {
-    for (var product in products) {
-      // Imprimir los datos antes de guardarlos
-      print('Guardando producto: $product');
+    setState(() {
+      _isLoading = true;
+    });
 
-      // Verificar si el ID del producto ya existe
-      bool idExists =
-          await _databaseService.checkIfProductIdExists(product['id']);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
 
-      if (idExists) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('El ID ${product['id']} ya está en uso.'),
-            ),
-          );
+    try {
+      for (var product in products) {
+        // Imprimir los datos antes de guardarlos
+        print('Guardando producto: $product');
+
+        // Verificar si el ID del producto ya existe
+        bool idExists =
+            await _databaseService.checkIfProductIdExists(product['id']);
+
+        if (idExists) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('El ID ${product['id']} ya está en uso.'),
+              ),
+            );
+          }
+          return;
         }
-        return;
+
+        await _databaseService.addProduct(product);
       }
 
-      await _databaseService.addProduct(product);
-    }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Producto/s guardado/s con éxito.'),
+          ),
+        );
+      }
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Producto/s guardado/s con éxito.'),
-        ),
-      );
+      // Limpiar el formulario
+      setState(() {
+        products = [
+          {
+            'name': '',
+            'id': '',
+            'netPrice': 0,
+            'salePrice': 0,
+            'categoryId': null, // Agregado
+            'subcategoryId': null, // Agregado
+            'subsubcategoryId': null, // Agregado
+            'state': 'Activo', // Agregado
+            'createdAt': Timestamp.now(),
+          }
+        ];
+      });
+    } catch (e) {
+      debugPrint('Error al agregar el producto: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+      Navigator.of(context).pop(); // Cierra el diálogo de carga
     }
-
-    // Limpiar el formulario
-    setState(() {
-      products = [
-        {
-          'name': '',
-          'id': '',
-          'netPrice': 0,
-          'salePrice': 0,
-          'categoryId': null, // Agregado
-          'subcategoryId': null, // Agregado
-          'subsubcategoryId': null, // Agregado
-          'createdAt': Timestamp.now(),
-        }
-      ];
-    });
   }
 
   @override
@@ -176,7 +203,7 @@ class AddProductScreenState extends State<AddProductScreen> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: _saveProducts,
+                  onPressed: _isLoading ? null : _saveProducts, // Deshabilitar mientras carga
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.teal,
                     padding: const EdgeInsets.symmetric(vertical: 15),

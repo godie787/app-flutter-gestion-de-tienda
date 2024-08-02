@@ -5,12 +5,94 @@ import 'package:flutter/material.dart';
 class DatabaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> saveDailyReport(DateTime date, Map<String, dynamic> reportData) async {
-    await FirebaseFirestore.instance.collection('DailyReports').add({
-      'date': date,
-      'reportData': reportData,
-      'createdAt': Timestamp.now(),
-    });
+  // Obtener el estado de la caja (abierta o cerrada)
+  Future<bool> getCajaStatus() async {
+    var cajaSnapshot = await _firestore
+        .collection('Caja')
+        .orderBy('date', descending: true)
+        .limit(1)
+        .get();
+
+    if (cajaSnapshot.docs.isNotEmpty) {
+      var cajaData = cajaSnapshot.docs.first.data() as Map<String, dynamic>;
+      return cajaData['status'] == 'open';
+    }
+    return false;
+  }
+
+  Future<Map<String, dynamic>?> getProductosVendidosDelDia() async {
+    try {
+      // Obtener el estado más reciente de la caja
+      var cajaSnapshot = await _firestore
+          .collection('Caja')
+          .orderBy('date', descending: true)
+          .limit(1)
+          .get();
+
+      if (cajaSnapshot.docs.isEmpty) {
+        print('No se encontró un registro de caja reciente.');
+        return null;
+      }
+
+      var cajaData = cajaSnapshot.docs.first.data() as Map<String, dynamic>;
+      Timestamp openTime = cajaData['openTime'];
+      String status = cajaData['status'];
+
+      if (status == 'closed') {
+        print(
+            'La caja está cerrada. No se pueden mostrar los productos vendidos.');
+        return null; // Retorna null si la caja está cerrada
+      }
+
+      // Obtener la hora actual
+      Timestamp currentTime = Timestamp.now();
+
+      // Consultar las ventas realizadas desde la última apertura de caja hasta ahora
+      QuerySnapshot ventasSnapshot = await _firestore
+          .collection('Ventas')
+          .where('createdAt', isGreaterThanOrEqualTo: openTime)
+          .where('createdAt', isLessThanOrEqualTo: currentTime)
+          .get();
+
+      List<Map<String, dynamic>> productosVendidos = [];
+      double totalSales = 0;
+      int totalProductsSold = 0;
+      int totalSalesCount = ventasSnapshot.docs.length;
+
+      for (var doc in ventasSnapshot.docs) {
+        var ventaData = doc.data() as Map<String, dynamic>;
+        print('Venta encontrada: $ventaData');
+
+        QuerySnapshot productosSnapshot =
+            await doc.reference.collection('ProductosVendidos').get();
+
+        for (var productoDoc in productosSnapshot.docs) {
+          var productoData = productoDoc.data() as Map<String, dynamic>;
+          print('Producto vendido encontrado: $productoData');
+
+          productosVendidos.add({
+            'productName': productoData['name'],
+            'salePrice': productoData['salePrice'],
+            'quantity': 1,
+            'vendedor': ventaData['userId'], // Suponiendo que guardas el userId
+          });
+
+          totalSales += productoData['salePrice'];
+          totalProductsSold++;
+        }
+      }
+
+      print('Productos vendidos del día: $productosVendidos');
+      return {
+        'productosVendidos': productosVendidos,
+        'totalSales': totalSales,
+        'totalProductsSold': totalProductsSold,
+        'totalSalesCount': totalSalesCount,
+      };
+    } catch (e) {
+      print('Error al obtener productos vendidos: $e');
+      return null;
+    }
   }
 
   // Método para generar el informe diario
@@ -41,22 +123,43 @@ class DatabaseService {
           .get();
 
       double totalVentas = 0;
+      double totalCosto = 0;
       int cantidadProductosVendidos = 0;
+      int cantidadVentasRealizadas = ventasSnapshot.docs.length;
+
+      List<Map<String, dynamic>> detallesVentas = [];
 
       for (var doc in ventasSnapshot.docs) {
         var ventaData = doc.data() as Map<String, dynamic>;
         totalVentas += ventaData['total'];
-        QuerySnapshot productosVendidosSnapshot = await doc.reference
-            .collection('ProductosVendidos')
-            .get();
+
+        QuerySnapshot productosVendidosSnapshot =
+            await doc.reference.collection('ProductosVendidos').get();
+
         cantidadProductosVendidos += productosVendidosSnapshot.size;
+
+        for (var productoDoc in productosVendidosSnapshot.docs) {
+          var productoData = productoDoc.data() as Map<String, dynamic>;
+          totalCosto += productoData['costPrice'] ?? 0;
+          detallesVentas.add({
+            'productName': productoData['name'],
+            'amount': productoData['salePrice'],
+            'vendedor': ventaData['userId'],
+          });
+        }
       }
+
+      double totalGanancias = totalVentas - totalCosto;
 
       // Datos del informe diario
       Map<String, dynamic> reportData = {
         'date': DateTime.now(),
         'totalVentas': totalVentas,
+        'totalCosto': totalCosto,
+        'totalGanancias': totalGanancias,
         'cantidadProductosVendidos': cantidadProductosVendidos,
+        'cantidadVentasRealizadas': cantidadVentasRealizadas,
+        'detallesVentas': detallesVentas,
       };
 
       return reportData;
@@ -65,15 +168,16 @@ class DatabaseService {
       return null;
     }
   }
+
   // Función para abrir caja
+  // Abrir la caja y guardar el estado en Firestore
   Future<void> openCaja() async {
     try {
-      // Crear un documento en la colección "Caja" con la fecha de hoy y la hora de apertura
       await _firestore.collection('Caja').add({
         'date': Timestamp.now(), // Fecha y hora actuales
         'openTime': Timestamp.now(), // Hora de apertura
         'status': 'open', // Estado de la caja
-        'userId': FirebaseAuth.instance.currentUser!.uid, // ID del usuario que abrió la caja
+        'userId': FirebaseAuth.instance.currentUser!.uid, // ID del usuario
       });
 
       debugPrint('Caja abierta exitosamente.');
@@ -85,11 +189,10 @@ class DatabaseService {
   // Función para cerrar caja
   Future<void> closeCaja() async {
     try {
-      // Buscar el documento de caja abierto para hoy y actualizarlo con la hora de cierre
       QuerySnapshot cajaQuery = await _firestore
           .collection('Caja')
-          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime.now().subtract(const Duration(hours: 24))))
           .where('status', isEqualTo: 'open')
+          .orderBy('date', descending: true)
           .limit(1)
           .get();
 
@@ -110,70 +213,72 @@ class DatabaseService {
   }
 
   Future<void> createVenta(
-    List<Map<String, dynamic>> productos, double total, String userId) async {
-      try {
-        // Crear un documento en la colección "Ventas" con el ID del usuario, total y fecha de creación
-        DocumentReference ventaRef = await _firestore.collection('Ventas').add({
-          'userId': userId, // ID del usuario que realizó la venta
-          'total': total, // Total de la venta
-          'createdAt': Timestamp.now(), // Fecha y hora de la venta
+      List<Map<String, dynamic>> productos, double total, String userId) async {
+    try {
+      // Crear un documento en la colección "Ventas" con el ID del usuario, total y fecha de creación
+      DocumentReference ventaRef = await _firestore.collection('Ventas').add({
+        'userId': userId, // ID del usuario que realizó la venta
+        'total': total, // Total de la venta
+        'createdAt': Timestamp.now(), // Fecha y hora de la venta
+      });
+
+      // Para cada producto en la lista, agregar un documento en la subcolección "ProductosVendidos"
+      for (var producto in productos) {
+        print(
+            'Agregando producto a la venta: ${producto['nameController'].text}'); // Debug
+        await ventaRef.collection('ProductosVendidos').add({
+          'productId': producto['idController'].text, // ID del producto
+          'name': producto['nameController'].text, // Nombre del producto
+          'salePrice': double.tryParse(producto['salePriceController'].text) ??
+              0, // Precio de venta
         });
-
-        // Para cada producto en la lista, agregar un documento en la subcolección "ProductosVendidos"
-        for (var producto in productos) {
-          print('Agregando producto a la venta: ${producto['nameController'].text}'); // Debug
-          await ventaRef.collection('ProductosVendidos').add({
-            'productId': producto['idController'].text, // ID del producto
-            'name': producto['nameController'].text, // Nombre del producto
-            'salePrice': double.tryParse(producto['salePriceController'].text) ?? 0, // Precio de venta
-          });
-        }
-
-        print('Venta creada y productos asociados exitosamente.');
-      } catch (e) {
-        print('Error al crear la venta: $e');
       }
-    }
 
+      print('Venta creada y productos asociados exitosamente.');
+    } catch (e) {
+      print('Error al crear la venta: $e');
+    }
+  }
 
   Future<void> processSale(List<Map<String, dynamic>> products) async {
-  try {
-    // Primero actualizamos los productos
-    for (var product in products) {
-      QuerySnapshot querySnapshot = await _firestore
-          .collection('Productos')
-          .where('id', isEqualTo: product['idController'].text)
-          .limit(1)
-          .get();
+    try {
+      // Primero actualizamos los productos
+      for (var product in products) {
+        QuerySnapshot querySnapshot = await _firestore
+            .collection('Productos')
+            .where('id', isEqualTo: product['idController'].text)
+            .limit(1)
+            .get();
 
-      if (querySnapshot.docs.isNotEmpty) {
-        DocumentReference documentReference = querySnapshot.docs.first.reference;
-        await documentReference.update({
-          'salePrice': double.tryParse(product['salePriceController'].text) ?? 0,
-          'state': 'Vendido',
-        });
-        print('Producto actualizado exitosamente.');
-      } else {
-        print('Producto no encontrado.');
+        if (querySnapshot.docs.isNotEmpty) {
+          DocumentReference documentReference =
+              querySnapshot.docs.first.reference;
+          await documentReference.update({
+            'salePrice':
+                double.tryParse(product['salePriceController'].text) ?? 0,
+            'state': 'Vendido',
+          });
+          print('Producto actualizado exitosamente.');
+        } else {
+          print('Producto no encontrado.');
+        }
       }
+
+      // Luego, obtenemos el total de la venta
+      double total = products.fold(0, (sum, item) {
+        return sum + (double.tryParse(item['salePriceController'].text) ?? 0);
+      });
+
+      // Obtenemos el ID del usuario actual
+      String userId = FirebaseAuth.instance.currentUser!.uid;
+
+      // Finalmente, creamos la venta y asociamos los productos a la venta
+      await createVenta(products, total, userId);
+      print('Venta creada y productos asociados exitosamente.');
+    } catch (e) {
+      print('Error al procesar la venta: $e');
     }
-
-    // Luego, obtenemos el total de la venta
-    double total = products.fold(0, (sum, item) {
-      return sum + (double.tryParse(item['salePriceController'].text) ?? 0);
-    });
-
-    // Obtenemos el ID del usuario actual
-    String userId = FirebaseAuth.instance.currentUser!.uid;
-
-    // Finalmente, creamos la venta y asociamos los productos a la venta
-    await createVenta(products, total, userId);
-    print('Venta creada y productos asociados exitosamente.');
-
-  } catch (e) {
-    print('Error al procesar la venta: $e');
   }
-}
 
   Future<Map<String, dynamic>?> getProductById(String productId) async {
     try {
@@ -194,7 +299,8 @@ class DatabaseService {
     }
   }
 
-  Future<void> updateProduct(String productId, double salePrice, String state) async {
+  Future<void> updateProduct(
+      String productId, double salePrice, String state) async {
     try {
       QuerySnapshot querySnapshot = await _firestore
           .collection('Productos')
@@ -203,7 +309,8 @@ class DatabaseService {
           .get();
 
       if (querySnapshot.docs.isNotEmpty) {
-        DocumentReference documentReference = querySnapshot.docs.first.reference;
+        DocumentReference documentReference =
+            querySnapshot.docs.first.reference;
         await documentReference.update({
           'salePrice': salePrice,
           'state': state,
@@ -216,7 +323,7 @@ class DatabaseService {
       print('Error al actualizar el producto: $e');
     }
   }
-  
+
   Future<List<Map<String, dynamic>>> getCategories() async {
     try {
       final querySnapshot =

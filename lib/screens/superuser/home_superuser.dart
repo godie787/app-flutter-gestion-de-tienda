@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:re_fashion/screens/options_navigator/add_products/add_product_screen.dart';
 import 'package:re_fashion/screens/options_navigator/sell_products/sell_product_screen.dart';
 import 'package:re_fashion/screens/options_navigator/reports/reports_screen.dart';
+import 'package:re_fashion/screens/options_navigator/add_sellers/add_sellers_screen.dart';
 
 class SuperuserHome extends StatefulWidget {
   const SuperuserHome({Key? key}) : super(key: key);
@@ -25,7 +26,7 @@ class SuperuserHomeState extends State<SuperuserHome> {
 
   final List<Widget> _pages = [
     const HomeScreen(),
-    const Center(child: Text('Agregar Vendedores')),
+    const AddSellerScreen(),
     const AddProductScreen(),
     const SellProductScreen(),
     ReportsScreen(),
@@ -37,20 +38,77 @@ class SuperuserHomeState extends State<SuperuserHome> {
       onWillPop: () async {
         bool shouldLogout = await showDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Salir de la aplicación'),
-            content: const Text(
-                '¿Estás seguro de que quieres salir? Se cerrará la sesión si lo haces.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancelar'),
+          builder: (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(20.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20.0),
               ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Salir'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.exit_to_app,
+                    size: 60,
+                    color: Colors.teal,
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Salir de la aplicación',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.teal,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    '¿Estás seguro de que quieres salir? Se cerrará la sesión si lo haces.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(false);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey[200],
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
+                        ),
+                        child: const Text('Cancelar'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(true);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
+                        ),
+                        child: const Text('Salir'),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
 
@@ -62,7 +120,12 @@ class SuperuserHomeState extends State<SuperuserHome> {
         }
       },
       child: Scaffold(
-        appBar: SuperuserAppBar(), // AppBar modular
+        appBar: const SuperuserAppBar(
+          title: 'Dashboard',
+          backgroundColor: Colors.teal,
+          leadingIcon: Icons.menu,
+          actions: [Icon(Icons.notifications)],
+        ),
         body: IndexedStack(
           index: _selectedIndex,
           children: _pages,

@@ -203,12 +203,15 @@ class AddProductScreenState extends State<AddProductScreen> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: _isLoading ? null : _saveProducts, // Deshabilitar mientras carga
+                  onPressed: _isLoading
+                      ? null
+                      : _saveProducts, // Deshabilitar mientras carga
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.teal,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                   ),
-                  child: const Text('Agregar Productos'),
+                  child: const Text('Agregar Productos',
+                      style: TextStyle(color: Colors.white)),
                 ),
               ],
             ),

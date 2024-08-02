@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../reports/daily_reports.dart';
-import '../../../services/database_service.dart';
+import 'package:re_fashion/screens/options_navigator/reports/daily_reports.dart';
+import 'package:re_fashion/services/database_service.dart';
 
 class ReportsScreen extends StatelessWidget {
   final DatabaseService _databaseService = DatabaseService();
@@ -10,22 +10,18 @@ class ReportsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200], // Fondo similar a las otras vistas
-      appBar: AppBar(
-        title: const Text('Informes'),
-        backgroundColor: Colors.teal, // Mantén la consistencia con otras pantallas
-      ),
+      backgroundColor: Colors.grey[200],
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               'Generar Informes',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.teal,
+                color: Colors.teal[800],
               ),
               textAlign: TextAlign.center,
             ),
@@ -37,29 +33,33 @@ class ReportsScreen extends StatelessWidget {
               description: 'Genera un resumen de las ventas diarias.',
               color: Colors.blueAccent,
               onTap: () async {
-                // Generar el informe diario y obtener los datos
-                Map<String, dynamic>? reportData = await _databaseService.generateDailyReport();
+                // Genera el informe diario y obtén los datos reales
+                Map<String, dynamic>? reportData =
+                    await _databaseService.generateDailyReport();
 
                 if (reportData != null) {
-                  DateTime reportDate = reportData['date'];
-                  double totalSales = reportData['totalVentas'];
-                  int totalProductsSold = reportData['cantidadProductosVendidos'];
-
-                  // Navegar a la vista del informe diario
+                  // Navega a la vista del informe diario
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => DailyReportsScreen(
-                        reportDate: reportDate,
-                        totalSales: totalSales,
-                        totalProductsSold: totalProductsSold,
+                        reportDate: reportData['date'],
+                        totalSales: reportData['totalVentas'],
+                        totalCost: reportData['totalCosto'],
+                        totalProfit: reportData['totalGanancias'],
+                        totalProductsSold:
+                            reportData['cantidadProductosVendidos'],
+                        totalSalesCount: reportData['cantidadVentasRealizadas'],
+                        salesDetails: List<Map<String, dynamic>>.from(
+                            reportData['detallesVentas']),
                       ),
                     ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('No se pudo generar el informe diario.'),
+                      content:
+                          Text('Cierra caja para generar tu informe diario.'),
                     ),
                   );
                 }

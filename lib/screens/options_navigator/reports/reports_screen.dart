@@ -33,33 +33,25 @@ class ReportsScreen extends StatelessWidget {
               description: 'Genera un resumen de las ventas diarias.',
               color: Colors.blueAccent,
               onTap: () async {
-                // Genera el informe diario y obtén los datos reales
-                Map<String, dynamic>? reportData =
-                    await _databaseService.generateDailyReport();
+                DateTime today = DateTime.now();
+                List<Map<String, dynamic>> dailyReports =
+                    await _databaseService.getDailyReportsByDay(today);
 
-                if (reportData != null) {
-                  // Navega a la vista del informe diario
+                if (dailyReports.isNotEmpty) {
+                  // Navega a la vista de informes diarios, pasando la lista de informes del día
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => DailyReportsScreen(
-                        reportDate: reportData['date'],
-                        totalSales: reportData['totalVentas'],
-                        totalCost: reportData['totalCosto'],
-                        totalProfit: reportData['totalGanancias'],
-                        totalProductsSold:
-                            reportData['cantidadProductosVendidos'],
-                        totalSalesCount: reportData['cantidadVentasRealizadas'],
-                        salesDetails: List<Map<String, dynamic>>.from(
-                            reportData['detallesVentas']),
+                        dailyReports: dailyReports, // Pasa los informes diarios
                       ),
                     ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content:
-                          Text('Cierra caja para generar tu informe diario.'),
+                      content: Text(
+                          'No hay informes disponibles para las cajas cerradas de hoy.'),
                     ),
                   );
                 }

@@ -14,20 +14,26 @@ class SellProductScreenState extends State<SellProductScreen>
   final List<Map<String, dynamic>> _products = [];
   final DatabaseService _databaseService = DatabaseService();
   bool _isLoading = false;
+  bool _isDialogOpen = false;  // Flag para evitar diálogos duplicados
 
-  void _addNewProductField() {
-    setState(() {
-      _products.add({
-        'idController': TextEditingController(),
-        'nameController': TextEditingController(),
-        'netPriceController': TextEditingController(),
-        'salePriceController': TextEditingController(),
-        'state': 'Activo',
+  void _addNewProductField() async {
+    bool isCajaOpen = await _databaseService.getCajaStatus();
+
+    if (!isCajaOpen) {
+      _showCajaClosedDialog();
+    } else {
+      setState(() {
+        _products.add({
+          'idController': TextEditingController(),
+          'nameController': TextEditingController(),
+          'netPriceController': TextEditingController(),
+          'salePriceController': TextEditingController(),
+          'state': 'Activo',
+        });
       });
-    });
 
-    // Abre automáticamente el formulario emergente al agregar un nuevo producto
-    _showProductForm(_products.length - 1);
+      _scanBarcode(_products.length - 1);
+    }
   }
 
   void _removeProductField(int index) {
@@ -39,8 +45,11 @@ class SellProductScreenState extends State<SellProductScreen>
   Future<void> _scanBarcode(int index) async {
     String barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
         '#ff6666', 'Cancelar', true, ScanMode.BARCODE);
+
     if (barcodeScanRes != '-1') {
       _fetchProductDetails(index, barcodeScanRes);
+    } else {
+      _showProductForm(index);
     }
   }
 
@@ -50,6 +59,25 @@ class SellProductScreenState extends State<SellProductScreen>
     });
 
     try {
+      // Limpia el campo de ID antes de verificar si el producto está en la lista
+      _products[index]['idController'].text = '';
+
+      // Verificación de si el producto ya está en la lista
+      bool productAlreadyAdded = _products.any(
+          (product) => product['idController'].text == productId);
+
+      if (productAlreadyAdded) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('El producto ya está en la lista.'),
+          ),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
       var productData = await _databaseService.getProductById(productId);
 
       if (productData != null) {
@@ -61,11 +89,11 @@ class SellProductScreenState extends State<SellProductScreen>
           );
           setState(() {
             _isLoading = false;
-            _products[index]['idController'].clear();
           });
           return;
         }
 
+        // Rellena los campos del producto
         setState(() {
           _products[index]['idController'].text = productId;
           _products[index]['nameController'].text = productData['name'] ?? '';
@@ -75,15 +103,16 @@ class SellProductScreenState extends State<SellProductScreen>
               productData['salePrice'].toString();
           _products[index]['state'] = productData['state'] ?? 'Activo';
         });
+
+        if (!_isDialogOpen) {
+          _showProductForm(index);
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Producto no encontrado.'),
           ),
         );
-        setState(() {
-          _products[index]['idController'].clear();
-        });
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -98,7 +127,16 @@ class SellProductScreenState extends State<SellProductScreen>
     }
   }
 
+  void _manualProductIdEntry(int index, String productId) {
+    if (productId.isNotEmpty) {
+      _fetchProductDetails(index, productId);
+    }
+  }
+
   void _showProductForm(int index) {
+    if (_isDialogOpen) return;  // Prevenir apertura múltiple del diálogo
+    _isDialogOpen = true;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -146,11 +184,15 @@ class SellProductScreenState extends State<SellProductScreen>
                           labelText: 'ID del Producto',
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.qr_code_scanner),
-                            onPressed: () => _scanBarcode(index),
+                            onPressed: () {
+                              Navigator.of(context).pop();  // Cierra el diálogo antes de escanear
+                              _isDialogOpen = false;
+                              _scanBarcode(index);
+                            },
                           ),
                         ),
                         onSubmitted: (value) =>
-                            _fetchProductDetails(index, value),
+                            _manualProductIdEntry(index, value),
                       ),
                       const SizedBox(height: 10),
                       TextField(
@@ -181,6 +223,7 @@ class SellProductScreenState extends State<SellProductScreen>
                           ElevatedButton(
                             onPressed: () {
                               Navigator.of(context).pop();
+                              _isDialogOpen = false;  // Reinicia el flag al cerrar
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.grey[200],
@@ -194,6 +237,7 @@ class SellProductScreenState extends State<SellProductScreen>
                           ElevatedButton(
                             onPressed: () {
                               Navigator.of(context).pop(); // Cerrar el popup
+                              _isDialogOpen = false;  // Reinicia el flag al cerrar
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.teal,
@@ -214,7 +258,9 @@ class SellProductScreenState extends State<SellProductScreen>
           },
         );
       },
-    );
+    ).then((_) {
+      _isDialogOpen = false;  // Asegúrate de reiniciar el flag cuando el diálogo se cierra
+    });
   }
 
   void _showSaleDetails() {
@@ -224,7 +270,7 @@ class SellProductScreenState extends State<SellProductScreen>
           content: Text('Agrega productos para ver el detalle de venta.'),
         ),
       );
-      return; // Evita abrir el popup si no hay productos
+      return;
     }
 
     if (!_areProductsValid()) {
@@ -286,11 +332,10 @@ class SellProductScreenState extends State<SellProductScreen>
 
                 setState(() {
                   _isLoading = false;
-                  _products.clear(); // Limpiar la lista de productos
+                  _products.clear();
                 });
 
-                Navigator.of(context)
-                    .pop(); // Cerrar el popup después de procesar la venta
+                Navigator.of(context).pop();
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -299,6 +344,49 @@ class SellProductScreenState extends State<SellProductScreen>
                 );
               },
               child: const Text('Procesar Venta'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showCajaClosedDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(
+                Icons.warning,
+                size: 50,
+                color: Colors.red,
+              ),
+            ],
+          ),
+          content: const Text(
+            'Debes abrir caja para poder realizar una venta.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+              ),
+              child: const Text('Aceptar'),
             ),
           ],
         );

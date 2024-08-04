@@ -352,8 +352,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Center(
                                     child: Text(
                                       _isCajaAbierta
-                                          ? 'CERRAR CAJA'
-                                          : 'ABRIR CAJA',
+                                          ? '    CERRAR CAJA'
+                                          : 'ABRIR CAJA   ',
                                       style: TextStyle(
                                         color: _isCajaAbierta
                                             ? Colors.white

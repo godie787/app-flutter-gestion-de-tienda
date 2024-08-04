@@ -4,32 +4,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'screens/superuser/home_superuser.dart';
 import 'screens/recover/recover_password.dart'; // Importa la nueva pantalla
-//import 'package:re_fashion/services/database_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  // Crear una instancia de DatabaseService
-  // DatabaseService dbService = DatabaseService();
-
-  // Llamar a las funciones para crear categorías y productos
-  // await dbService.createCategories();
-  // await dbService.createProductsCollection();
-
-  // Si tienes otras inicializaciones como createRoles y registerUser
-  // Puedes llamarlas aquí también
-  // await createRoles();
-  // await registerUser();
-
-  runApp(const MyApp()); // Aquí se agrega 'const'
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key})
-      : super(
-            key:
-                key); //este error es una sigerencia que no está bien, ya que como lo hice, es como flutter lo recomienda
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -57,19 +41,16 @@ class LoginScreenState extends State<LoginScreen> {
   String _errorMessage = '';
 
   Future<void> _login() async {
-    // Cambiar el estado a cargando
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
 
     try {
-      // Intentar iniciar sesión con Firebase
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
               email: _emailController.text, password: _passwordController.text);
 
-      // Obtener el rol del usuario desde Firestore
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(userCredential.user!.uid)
@@ -77,14 +58,12 @@ class LoginScreenState extends State<LoginScreen> {
 
       String roleId = userDoc.get('roleId');
 
-      if (!mounted) return; // Asegurarse de que el widget sigue montado
+      if (!mounted) return;
 
       if (roleId == '1') {
-        // Si es superuser, redirigir a la pantalla específica de superuser
         Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const SuperuserHome()));
       } else {
-        // Redirigir a otra pantalla o manejar otros roles
         Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const SuperuserHome()));
       }
@@ -106,13 +85,19 @@ class LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.grey[200],
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const Icon(
+                Icons.login,
+                size: 100,
+                color: Colors.teal,
+              ),
+              const SizedBox(height: 20),
               const Text(
                 'Inicio de Sesión',
                 style: TextStyle(

@@ -1,31 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Importa la librería intl para el formato de fecha
+import 'package:intl/intl.dart';
 
 class DailyReportsScreen extends StatelessWidget {
-  final DateTime reportDate;
-  final double totalSales;
-  final double totalCost;
-  final double totalProfit;
-  final int totalProductsSold;
-  final int totalSalesCount;
-  final List<Map<String, dynamic>> salesDetails;
+  final List<Map<String, dynamic>> dailyReports; // Lista de informes diarios para el día especificado
 
   const DailyReportsScreen({
     Key? key,
-    required this.reportDate,
-    required this.totalSales,
-    required this.totalCost,
-    required this.totalProfit,
-    required this.totalProductsSold,
-    required this.totalSalesCount,
-    required this.salesDetails,
+    required this.dailyReports,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Formatear la fecha usando intl
-    String formattedDate = DateFormat('dd/MM/yyyy').format(reportDate);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Informe Diario'),
@@ -33,43 +18,72 @@ class DailyReportsScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Informe del Día: $formattedDate',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            _buildInfoRow(
-                'Total Ventas:', '\$${totalSales.toStringAsFixed(2)}'),
-            _buildInfoRow('Productos Vendidos:', '$totalProductsSold'),
-            _buildInfoRow('Ventas Realizadas:', '$totalSalesCount'),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: salesDetails.length,
-                itemBuilder: (context, index) {
-                  final sale = salesDetails[index];
+        child: ListView.builder(
+          itemCount: dailyReports.length,
+          itemBuilder: (context, index) {
+            final report = dailyReports[index];
+            String formattedOpenTime = DateFormat('HH:mm').format(report['openTime']);
+            String formattedCloseTime = DateFormat('HH:mm').format(report['closeTime']);
+            String duration = _calculateDuration(report['openTime'], report['closeTime']);
+            String date = DateFormat('dd/MM/yyyy').format(report['openTime']);
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Caja abierta el: $date',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Duración: $formattedOpenTime - $formattedCloseTime ($duration)',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                _buildInfoRow('Total Ventas:', '\$${report['totalVentas'].toStringAsFixed(2)}'),
+                _buildInfoRow('Productos Vendidos:', '${report['cantidadProductosVendidos']}'),
+                _buildInfoRow('Ventas Realizadas:', '${report['cantidadVentasRealizadas']}'),
+                const SizedBox(height: 20),
+                const Text(
+                  'Detalles de Ventas',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...report['detallesVentas'].map<Widget>((sale) {
                   return Card(
                     child: ListTile(
                       title: Text(sale['productName']),
                       subtitle: Text(
-                          'Precio: \$${sale['amount']} | Vendedor: ${sale['vendedor']}'),
+                        'Precio: \$${sale['amount']} | Vendedor: ${sale['vendedor']}',
+                      ),
                     ),
                   );
-                },
-              ),
-            ),
-          ],
+                }).toList(),
+                const Divider(),
+              ],
+            );
+          },
         ),
       ),
     );
+  }
+
+  String _calculateDuration(DateTime openTime, DateTime closeTime) {
+    Duration duration = closeTime.difference(openTime);
+    return '${duration.inHours}h ${duration.inMinutes.remainder(60)}m';
   }
 
   Widget _buildInfoRow(String label, String value) {

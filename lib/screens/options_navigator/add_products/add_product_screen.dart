@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Importar shared_preferences
 import '/services/database_service.dart';
 import '../add_products/product_form.dart'; // Importa el nuevo archivo para el formulario
+import 'dart:convert'; // Importar para codificar y decodificar JSON
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({Key? key}) : super(key: key);
@@ -28,6 +30,39 @@ class AddProductScreenState extends State<AddProductScreen> {
   final DatabaseService _databaseService = DatabaseService();
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadProductsFromLocalStorage(); // Cargar productos desde almacenamiento local
+  }
+
+  // Guardar productos en almacenamiento local
+  Future<void> _saveProductsToLocalStorage() async {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      List<String> encodedProducts = products.map((product) {
+        // Convertir Timestamp a milisegundos desde la época Unix
+        product['createdAt'] = product['createdAt'].millisecondsSinceEpoch;
+        return jsonEncode(product);
+      }).toList();
+      await prefs.setStringList('products', encodedProducts);
+  }
+
+  // Cargar productos desde almacenamiento local
+  Future<void> _loadProductsFromLocalStorage() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String>? encodedProducts = prefs.getStringList('products');
+    if (encodedProducts != null) {
+      setState(() {
+        products = encodedProducts.map((product) {
+          Map<String, dynamic> decodedProduct = jsonDecode(product);
+          // Convertir milisegundos desde la época Unix de vuelta a Timestamp
+          decodedProduct['createdAt'] = Timestamp.fromMillisecondsSinceEpoch(decodedProduct['createdAt']);
+          return decodedProduct;
+        }).toList();
+      });
+    }
+}
+
   void _addNewProductField() {
     setState(() {
       products.add({
@@ -42,12 +77,14 @@ class AddProductScreenState extends State<AddProductScreen> {
         'createdAt': Timestamp.now(),
       });
     });
+    _saveProductsToLocalStorage(); // Guardar después de agregar un producto
   }
 
   void _removeProductField(int index) {
     setState(() {
       products.removeAt(index);
     });
+    _saveProductsToLocalStorage(); // Guardar después de eliminar un producto
   }
 
   Future<void> _saveProducts() async {
@@ -67,9 +104,6 @@ class AddProductScreenState extends State<AddProductScreen> {
 
     try {
       for (var product in products) {
-        // Imprimir los datos antes de guardarlos
-        print('Guardando producto: $product');
-
         // Verificar si el ID del producto ya existe
         bool idExists =
             await _databaseService.checkIfProductIdExists(product['id']);
@@ -104,14 +138,16 @@ class AddProductScreenState extends State<AddProductScreen> {
             'id': '',
             'netPrice': 0,
             'salePrice': 0,
-            'categoryId': null, // Agregado
-            'subcategoryId': null, // Agregado
-            'subsubcategoryId': null, // Agregado
-            'state': 'Activo', // Agregado
+            'categoryId': null,
+            'subcategoryId': null,
+            'subsubcategoryId': null,
+            'state': 'Activo',
             'createdAt': Timestamp.now(),
           }
         ];
       });
+
+      await _saveProductsToLocalStorage(); // Limpiar el almacenamiento local después de guardar
     } catch (e) {
       debugPrint('Error al agregar el producto: $e');
     } finally {
@@ -168,6 +204,7 @@ class AddProductScreenState extends State<AddProductScreen> {
                                 setState(() {
                                   products[index] = updatedProduct;
                                 });
+                                _saveProductsToLocalStorage(); // Guardar después de actualizar un producto
                               },
                             ),
                             child: Container(

@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="re_fashion"
+        android:label="VentaPro"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

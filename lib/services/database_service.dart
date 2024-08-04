@@ -6,6 +6,169 @@ class DatabaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Obtener el estado de la caja (abierta o cerrada)
+
+  Future<List<Map<String, dynamic>>> getDailyReportsByDate(DateTime date) async {
+    try {
+      // Ajustar las fechas para buscar informes solo del día especificado
+      DateTime startDate = DateTime(date.year, date.month, date.day);
+      DateTime endDate = startDate.add(const Duration(days: 1));
+
+      QuerySnapshot cajaSnapshot = await _firestore
+          .collection('Caja')
+          .where('status', isEqualTo: 'closed')
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+          .orderBy('date', descending: true)
+          .get();
+
+      if (cajaSnapshot.docs.isEmpty) {
+        print('No se encontraron informes de caja cerrada para la fecha especificada.');
+        return [];
+      }
+
+      List<Map<String, dynamic>> reports = [];
+
+      for (var cajaDoc in cajaSnapshot.docs) {
+        var cajaData = cajaDoc.data() as Map<String, dynamic>;
+        Timestamp openTime = cajaData['openTime'];
+        Timestamp closeTime = cajaData['closeTime'];
+
+        QuerySnapshot ventasSnapshot = await _firestore
+            .collection('Ventas')
+            .where('createdAt', isGreaterThanOrEqualTo: openTime)
+            .where('createdAt', isLessThanOrEqualTo: closeTime)
+            .get();
+
+        double totalVentas = 0;
+        double totalCosto = 0;
+        int cantidadProductosVendidos = 0;
+        int cantidadVentasRealizadas = ventasSnapshot.docs.length;
+
+        List<Map<String, dynamic>> detallesVentas = [];
+
+        for (var ventaDoc in ventasSnapshot.docs) {
+          var ventaData = ventaDoc.data() as Map<String, dynamic>;
+          totalVentas += ventaData['total'];
+
+          QuerySnapshot productosVendidosSnapshot =
+              await ventaDoc.reference.collection('ProductosVendidos').get();
+
+          cantidadProductosVendidos += productosVendidosSnapshot.size;
+
+          for (var productoDoc in productosVendidosSnapshot.docs) {
+            var productoData = productoDoc.data() as Map<String, dynamic>;
+            totalCosto += productoData['costPrice'] ?? 0;
+            detallesVentas.add({
+              'productName': productoData['name'],
+              'amount': productoData['salePrice'],
+              'vendedor': ventaData['userId'],
+            });
+          }
+        }
+
+        double totalGanancias = totalVentas - totalCosto;
+
+        reports.add({
+          'openTime': openTime.toDate(),
+          'closeTime': closeTime.toDate(),
+          'totalVentas': totalVentas,
+          'totalCosto': totalCosto,
+          'totalGanancias': totalGanancias,
+          'cantidadProductosVendidos': cantidadProductosVendidos,
+          'cantidadVentasRealizadas': cantidadVentasRealizadas,
+          'detallesVentas': detallesVentas,
+        });
+      }
+
+      return reports;
+    } catch (e) {
+      print('Error al obtener informes diarios: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getDailyReportsByDay(DateTime date) async {
+  try {
+    // Convertir la fecha proporcionada a un rango de tiempo de 24 horas
+    DateTime startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
+    DateTime endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+
+    QuerySnapshot cajaSnapshot = await _firestore
+        .collection('Caja')
+        .where('status', isEqualTo: 'closed')
+        .where('closeTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('closeTime', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+        .orderBy('closeTime', descending: false)
+        .get();
+
+    if (cajaSnapshot.docs.isEmpty) {
+      print('No se encontraron informes de caja cerrada para la fecha especificada.');
+      return [];
+    }
+
+    List<Map<String, dynamic>> reports = [];
+
+    for (var cajaDoc in cajaSnapshot.docs) {
+      var cajaData = cajaDoc.data() as Map<String, dynamic>;
+      Timestamp openTime = cajaData['openTime'];
+      Timestamp closeTime = cajaData['closeTime'];
+
+      QuerySnapshot ventasSnapshot = await _firestore
+          .collection('Ventas')
+          .where('createdAt', isGreaterThanOrEqualTo: openTime)
+          .where('createdAt', isLessThanOrEqualTo: closeTime)
+          .get();
+
+      double totalVentas = 0;
+      double totalCosto = 0;
+      int cantidadProductosVendidos = 0;
+      int cantidadVentasRealizadas = ventasSnapshot.docs.length;
+
+      List<Map<String, dynamic>> detallesVentas = [];
+
+      for (var doc in ventasSnapshot.docs) {
+        var ventaData = doc.data() as Map<String, dynamic>;
+        totalVentas += ventaData['total'];
+
+        QuerySnapshot productosVendidosSnapshot =
+            await doc.reference.collection('ProductosVendidos').get();
+
+        cantidadProductosVendidos += productosVendidosSnapshot.size;
+
+        for (var productoDoc in productosVendidosSnapshot.docs) {
+          var productoData = productoDoc.data() as Map<String, dynamic>;
+          totalCosto += productoData['costPrice'] ?? 0;
+          detallesVentas.add({
+            'productName': productoData['name'],
+            'amount': productoData['salePrice'],
+            'vendedor': ventaData['userId'],
+          });
+        }
+      }
+
+      double totalGanancias = totalVentas - totalCosto;
+
+      reports.add({
+        'date': cajaData['date'],  // O la fecha de cierre para mostrar correctamente
+        'totalVentas': totalVentas,
+        'totalCosto': totalCosto,
+        'totalGanancias': totalGanancias,
+        'cantidadProductosVendidos': cantidadProductosVendidos,
+        'cantidadVentasRealizadas': cantidadVentasRealizadas,
+        'detallesVentas': detallesVentas,
+        'openTime': openTime.toDate(),
+        'closeTime': closeTime.toDate(),
+      });
+    }
+
+    return reports;
+  } catch (e) {
+    print('Error al obtener informes diarios: $e');
+    return [];
+  }
+}
+
+
   Future<bool> getCajaStatus() async {
     var cajaSnapshot = await _firestore
         .collection('Caja')
@@ -21,79 +184,60 @@ class DatabaseService {
   }
 
   Future<Map<String, dynamic>?> getProductosVendidosDelDia() async {
-    try {
-      // Obtener el estado más reciente de la caja
-      var cajaSnapshot = await _firestore
-          .collection('Caja')
-          .orderBy('date', descending: true)
-          .limit(1)
-          .get();
+  try {
+    // Obtener la fecha de hoy desde las 00:00 hasta las 23:59
+    DateTime now = DateTime.now();
+    DateTime startOfDay = DateTime(now.year, now.month, now.day, 0, 0, 0);
+    DateTime endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-      if (cajaSnapshot.docs.isEmpty) {
-        print('No se encontró un registro de caja reciente.');
-        return null;
+    // Consultar las ventas realizadas durante el día
+    QuerySnapshot ventasSnapshot = await _firestore
+        .collection('Ventas')
+        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+        .get();
+
+    List<Map<String, dynamic>> productosVendidos = [];
+    double totalSales = 0;
+    int totalProductsSold = 0;
+    int totalSalesCount = ventasSnapshot.docs.length;
+
+    for (var doc in ventasSnapshot.docs) {
+      var ventaData = doc.data() as Map<String, dynamic>;
+      print('Venta encontrada: $ventaData');
+
+      QuerySnapshot productosSnapshot =
+          await doc.reference.collection('ProductosVendidos').get();
+
+      for (var productoDoc in productosSnapshot.docs) {
+        var productoData = productoDoc.data() as Map<String, dynamic>;
+        print('Producto vendido encontrado: $productoData');
+
+        productosVendidos.add({
+          'productName': productoData['name'],
+          'salePrice': productoData['salePrice'],
+          'quantity': 1,
+          'vendedor': ventaData['userId'], // Suponiendo que guardas el userId
+        });
+
+        totalSales += productoData['salePrice'];
+        totalProductsSold++;
       }
-
-      var cajaData = cajaSnapshot.docs.first.data() as Map<String, dynamic>;
-      Timestamp openTime = cajaData['openTime'];
-      String status = cajaData['status'];
-
-      if (status == 'closed') {
-        print(
-            'La caja está cerrada. No se pueden mostrar los productos vendidos.');
-        return null; // Retorna null si la caja está cerrada
-      }
-
-      // Obtener la hora actual
-      Timestamp currentTime = Timestamp.now();
-
-      // Consultar las ventas realizadas desde la última apertura de caja hasta ahora
-      QuerySnapshot ventasSnapshot = await _firestore
-          .collection('Ventas')
-          .where('createdAt', isGreaterThanOrEqualTo: openTime)
-          .where('createdAt', isLessThanOrEqualTo: currentTime)
-          .get();
-
-      List<Map<String, dynamic>> productosVendidos = [];
-      double totalSales = 0;
-      int totalProductsSold = 0;
-      int totalSalesCount = ventasSnapshot.docs.length;
-
-      for (var doc in ventasSnapshot.docs) {
-        var ventaData = doc.data() as Map<String, dynamic>;
-        print('Venta encontrada: $ventaData');
-
-        QuerySnapshot productosSnapshot =
-            await doc.reference.collection('ProductosVendidos').get();
-
-        for (var productoDoc in productosSnapshot.docs) {
-          var productoData = productoDoc.data() as Map<String, dynamic>;
-          print('Producto vendido encontrado: $productoData');
-
-          productosVendidos.add({
-            'productName': productoData['name'],
-            'salePrice': productoData['salePrice'],
-            'quantity': 1,
-            'vendedor': ventaData['userId'], // Suponiendo que guardas el userId
-          });
-
-          totalSales += productoData['salePrice'];
-          totalProductsSold++;
-        }
-      }
-
-      print('Productos vendidos del día: $productosVendidos');
-      return {
-        'productosVendidos': productosVendidos,
-        'totalSales': totalSales,
-        'totalProductsSold': totalProductsSold,
-        'totalSalesCount': totalSalesCount,
-      };
-    } catch (e) {
-      print('Error al obtener productos vendidos: $e');
-      return null;
     }
+
+    print('Productos vendidos del día: $productosVendidos');
+    return {
+      'productosVendidos': productosVendidos,
+      'totalSales': totalSales,
+      'totalProductsSold': totalProductsSold,
+      'totalSalesCount': totalSalesCount,
+    };
+  } catch (e) {
+    print('Error al obtener productos vendidos: $e');
+    return null;
   }
+}
+
 
   // Método para generar el informe diario
   Future<Map<String, dynamic>?> generateDailyReport() async {
@@ -282,6 +426,9 @@ class DatabaseService {
 
   Future<Map<String, dynamic>?> getProductById(String productId) async {
     try {
+      // Limpia cualquier espacio en blanco adicional
+      productId = productId.trim();
+
       QuerySnapshot querySnapshot = await _firestore
           .collection('Productos')
           .where('id', isEqualTo: productId)
@@ -298,6 +445,7 @@ class DatabaseService {
       return null;
     }
   }
+
 
   Future<void> updateProduct(
       String productId, double salePrice, String state) async {

@@ -39,10 +39,9 @@ class RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
         backgroundColor: Colors.teal,
-        title: const Text('Restablecer Contraseña'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -56,18 +55,18 @@ class RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                'Introduce tu correo electrónico para restablecer tu contraseña',
-                style: TextStyle(fontSize: 18),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
               const Icon(
                 Icons.lock_reset_rounded,
                 size: 100,
                 color: Colors.teal,
               ),
               const SizedBox(height: 20),
+              const Text(
+                'Introduce tu correo electrónico para restablecer tu contraseña',
+                style: TextStyle(fontSize: 18),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
               TextField(
                 controller: _emailController,
                 decoration: InputDecoration(

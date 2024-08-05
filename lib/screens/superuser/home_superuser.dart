@@ -7,6 +7,7 @@ import 'package:re_fashion/screens/options_navigator/add_products/add_product_sc
 import 'package:re_fashion/screens/options_navigator/sell_products/sell_product_screen.dart';
 import 'package:re_fashion/screens/options_navigator/reports/reports_screen.dart';
 import 'package:re_fashion/screens/options_navigator/add_sellers/add_sellers_screen.dart';
+import 'package:re_fashion/screens/options_drawer/chistes_fomes.dart';
 
 class SuperuserHome extends StatefulWidget {
   const SuperuserHome({Key? key}) : super(key: key);
@@ -133,6 +134,67 @@ class SuperuserHomeState extends State<SuperuserHome> {
         bottomNavigationBar: SuperuserBottomNavigationBar(
           selectedIndex: _selectedIndex,
           onItemTapped: _onItemTapped,
+        ),
+        drawer: Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Colors.teal,
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.account_circle,
+                    size: 80,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.person),
+                title: Text('Perfil'),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Navegar a la vista del perfil
+                },
+              ),
+              ListTile(
+  leading: Icon(Icons.sentiment_very_satisfied),
+  title: Text('Chistes Fomes'),
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ChistesFomesScreen()),
+    );
+  },
+),
+              ListTile(
+                leading: Icon(Icons.help),
+                title: Text('Soporte'),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Navegar a la vista de soporte
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.settings),
+                title: Text('Configuración'),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Navegar a la vista de configuración
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.exit_to_app),
+                title: Text('Cerrar Sesión'),
+                onTap: () async {
+                  await FirebaseAuth.instance.signOut();
+                  Navigator.of(context).pop(true);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

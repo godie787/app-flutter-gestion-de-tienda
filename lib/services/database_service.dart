@@ -893,8 +893,8 @@ class DatabaseService {
       // Crear usuario en Firebase Authentication
       UserCredential userCredential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: "diego.jorqueras@usm.cl",
-        password: "diegomatias",
+        email: "camilediaz2017@gmail.com",
+        password: "camile123",
       );
 
       // Obtener el UID del usuario creado
@@ -902,8 +902,8 @@ class DatabaseService {
 
       // Almacenar información adicional en Firestore
       await FirebaseFirestore.instance.collection('Users').doc(uid).set({
-        'name': 'Diego',
-        'email': 'diego.jorqueras@usm.cl',
+        'name': 'Camile',
+        'email': 'camilediaz2017@gmail.com',
         'roleId': '1', // Referencia al rol de superuser
       });
 

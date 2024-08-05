@@ -4,11 +4,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'screens/superuser/home_superuser.dart';
 import 'screens/recover/recover_password.dart'; // Importa la nueva pantalla
+import 'services/database_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  //DatabaseService databaseService = DatabaseService();
 
+  //await databaseService.registerUser();
   runApp(const MyApp());
 }
 

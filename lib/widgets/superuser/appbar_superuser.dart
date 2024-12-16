@@ -39,27 +39,6 @@ class SuperuserAppBar extends StatelessWidget implements PreferredSizeWidget {
               Scaffold.of(context).openDrawer();
             },
       ),
-      actions: actions ??
-          [
-            IconButton(
-              icon: const Icon(Icons.notifications, color: Colors.white),
-              onPressed: () {
-                // Aquí puedes agregar la acción deseada
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Notificaciones')),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.settings, color: Colors.white),
-              onPressed: () {
-                // Acción para abrir configuración o cualquier otra funcionalidad
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Configuración')),
-                );
-              },
-            ),
-          ],
     );
   }
 

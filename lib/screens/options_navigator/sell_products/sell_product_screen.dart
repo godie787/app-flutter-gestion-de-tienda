@@ -14,7 +14,7 @@ class SellProductScreenState extends State<SellProductScreen>
   final List<Map<String, dynamic>> _products = [];
   final DatabaseService _databaseService = DatabaseService();
   bool _isLoading = false;
-  bool _isDialogOpen = false;  // Flag para evitar diálogos duplicados
+  bool _isDialogOpen = false; // Flag para evitar diálogos duplicados
 
   void _addNewProductField() async {
     bool isCajaOpen = await _databaseService.getCajaStatus();
@@ -63,8 +63,8 @@ class SellProductScreenState extends State<SellProductScreen>
       _products[index]['idController'].text = '';
 
       // Verificación de si el producto ya está en la lista
-      bool productAlreadyAdded = _products.any(
-          (product) => product['idController'].text == productId);
+      bool productAlreadyAdded =
+          _products.any((product) => product['idController'].text == productId);
 
       if (productAlreadyAdded) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -134,7 +134,7 @@ class SellProductScreenState extends State<SellProductScreen>
   }
 
   void _showProductForm(int index) {
-    if (_isDialogOpen) return;  // Prevenir apertura múltiple del diálogo
+    if (_isDialogOpen) return; // Prevenir apertura múltiple del diálogo
     _isDialogOpen = true;
 
     showDialog(
@@ -185,7 +185,8 @@ class SellProductScreenState extends State<SellProductScreen>
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.qr_code_scanner),
                             onPressed: () {
-                              Navigator.of(context).pop();  // Cierra el diálogo antes de escanear
+                              Navigator.of(context)
+                                  .pop(); // Cierra el diálogo antes de escanear
                               _isDialogOpen = false;
                               _scanBarcode(index);
                             },
@@ -223,7 +224,8 @@ class SellProductScreenState extends State<SellProductScreen>
                           ElevatedButton(
                             onPressed: () {
                               Navigator.of(context).pop();
-                              _isDialogOpen = false;  // Reinicia el flag al cerrar
+                              _isDialogOpen =
+                                  false; // Reinicia el flag al cerrar
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.grey[200],
@@ -237,7 +239,8 @@ class SellProductScreenState extends State<SellProductScreen>
                           ElevatedButton(
                             onPressed: () {
                               Navigator.of(context).pop(); // Cerrar el popup
-                              _isDialogOpen = false;  // Reinicia el flag al cerrar
+                              _isDialogOpen =
+                                  false; // Reinicia el flag al cerrar
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.teal,
@@ -259,7 +262,8 @@ class SellProductScreenState extends State<SellProductScreen>
         );
       },
     ).then((_) {
-      _isDialogOpen = false;  // Asegúrate de reiniciar el flag cuando el diálogo se cierra
+      _isDialogOpen =
+          false; // Asegúrate de reiniciar el flag cuando el diálogo se cierra
     });
   }
 
@@ -291,7 +295,14 @@ class SellProductScreenState extends State<SellProductScreen>
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Detalle de la Venta'),
+          title: const Text(
+            'Detalle de la Venta',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.teal,
+            ),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -320,6 +331,13 @@ class SellProductScreenState extends State<SellProductScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[200],
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+              ),
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
@@ -343,6 +361,13 @@ class SellProductScreenState extends State<SellProductScreen>
                   ),
                 );
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+              ),
               child: const Text('Procesar Venta'),
             ),
           ],
@@ -438,7 +463,7 @@ class SellProductScreenState extends State<SellProductScreen>
                           ),
                         ),
                         child: Card(
-                          elevation: 2,
+                          elevation: 4,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),

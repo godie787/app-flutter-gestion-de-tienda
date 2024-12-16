@@ -550,12 +550,13 @@ class DatabaseService {
         'name': productData['name'],
         'netPrice': productData['netPrice'],
         'salePrice': productData['salePrice'],
-        'categoryId': productData['categoryId'], // ID de la categoría
-        'subcategoryId': productData['subcategoryId'], // ID de la subcategoría
-        'subsubcategoryId':
-            productData['subsubcategoryId'], // ID de la sub-subcategoría
+        'description': productData['description'], // Agregar el campo descripción
+        'categoryId': productData['categoryId'],
+        'subcategoryId': productData['subcategoryId'],
+        'subsubcategoryId': productData['subsubcategoryId'],
         'createdAt': productData['createdAt'],
         'state': productData['state'],
+        'images': productData['images'],
       });
 
       debugPrint('Producto agregado exitosamente');
@@ -563,6 +564,9 @@ class DatabaseService {
       debugPrint('Error al agregar el producto: $e');
     }
   }
+
+
+
 
   Future<bool> checkIfProductIdExists(String productId) async {
     try {
@@ -855,26 +859,26 @@ class DatabaseService {
   }
 
   Future<void> createProductsCollection() async {
-    CollectionReference products =
-        FirebaseFirestore.instance.collection('Productos');
+  CollectionReference products = _firestore.collection('Productos');
 
-    // Crear un ejemplo de producto
-    await products.add({
-      'id': '001',
-      'name': 'Producto de Ejemplo 2',
-      'netPrice': 1000,
-      'salePrice': 1500,
-    });
+  // Ejemplo de producto con los campos correctos, incluyendo la URL de la imagen
+  await products.add({
+    'categoryId': 'Accesorios', 
+    'createdAt': Timestamp.now(), 
+    'id': '192194040006', 
+    'name': 'Cintillo 1',
+    'netPrice': 700, 
+    'salePrice': 2000, 
+    'state': 'Activo',
+    'subcategoryId': 'Joyas y Bisutería', 
+    'subsubcategoryId': null, 
+    'image': 'URL_DE_LA_IMAGEN', // Agregar el campo de imagen
+  });
 
-    await products.add({
-      'id': '002',
-      'name': 'Producto de Ejemplo',
-      'netPrice': 5000,
-      'salePrice': 5500,
-    });
+  debugPrint("Producto agregado exitosamente");
+}
 
-    debugPrint("Colección de productos creada exitosamente.");
-  }
+
 
   Future<void> createRoles() async {
     await FirebaseFirestore.instance.collection('Roles').doc('1').set({
@@ -893,8 +897,8 @@ class DatabaseService {
       // Crear usuario en Firebase Authentication
       UserCredential userCredential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: "camilediaz2017@gmail.com",
-        password: "camile123",
+        email: "diego.jorqueras@usm.cl",
+        password: "123456",
       );
 
       // Obtener el UID del usuario creado
@@ -902,8 +906,8 @@ class DatabaseService {
 
       // Almacenar información adicional en Firestore
       await FirebaseFirestore.instance.collection('Users').doc(uid).set({
-        'name': 'Camile',
-        'email': 'camilediaz2017@gmail.com',
+        'name': 'Diego',
+        'email': 'diegomatiasjorquera@gmail.com',
         'roleId': '1', // Referencia al rol de superuser
       });
 

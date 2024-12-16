@@ -9,9 +9,9 @@ import 'services/database_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  //DatabaseService databaseService = DatabaseService();
+  DatabaseService databaseService = DatabaseService();
 
-  //await databaseService.registerUser();
+  await databaseService.registerUser();
   runApp(const MyApp());
 }
 
@@ -26,6 +26,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: const LoginScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

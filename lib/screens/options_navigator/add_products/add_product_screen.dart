@@ -4,6 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart'; // Importar shared_
 import '/services/database_service.dart';
 import '../add_products/product_form.dart'; // Importa el nuevo archivo para el formulario
 import 'dart:convert'; // Importar para codificar y decodificar JSON
+import 'dart:io'; // Importar para manejar archivos de imagen
+import 'package:image_picker/image_picker.dart'; // Importar para seleccionar imágenes
+import 'package:firebase_storage/firebase_storage.dart'; // Importar Firebase Storage
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({Key? key}) : super(key: key);
@@ -19,10 +22,11 @@ class AddProductScreenState extends State<AddProductScreen> {
       'id': '',
       'netPrice': 0,
       'salePrice': 0,
-      'categoryId': null, // Agregado
-      'subcategoryId': null, // Agregado
-      'subsubcategoryId': null, // Agregado
-      'state': 'Activo', // Agregado
+      'categoryId': null,
+      'subcategoryId': null,
+      'subsubcategoryId': null,
+      'state': 'Activo',
+      'image': null, // Campo para imagen
       'createdAt': Timestamp.now(),
     }
   ];
@@ -38,13 +42,12 @@ class AddProductScreenState extends State<AddProductScreen> {
 
   // Guardar productos en almacenamiento local
   Future<void> _saveProductsToLocalStorage() async {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      List<String> encodedProducts = products.map((product) {
-        // Convertir Timestamp a milisegundos desde la época Unix
-        product['createdAt'] = product['createdAt'].millisecondsSinceEpoch;
-        return jsonEncode(product);
-      }).toList();
-      await prefs.setStringList('products', encodedProducts);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> encodedProducts = products.map((product) {
+      product['createdAt'] = product['createdAt'].millisecondsSinceEpoch;
+      return jsonEncode(product);
+    }).toList();
+    await prefs.setStringList('products', encodedProducts);
   }
 
   // Cargar productos desde almacenamiento local
@@ -55,13 +58,27 @@ class AddProductScreenState extends State<AddProductScreen> {
       setState(() {
         products = encodedProducts.map((product) {
           Map<String, dynamic> decodedProduct = jsonDecode(product);
-          // Convertir milisegundos desde la época Unix de vuelta a Timestamp
-          decodedProduct['createdAt'] = Timestamp.fromMillisecondsSinceEpoch(decodedProduct['createdAt']);
+          decodedProduct['createdAt'] = Timestamp.fromMillisecondsSinceEpoch(
+              decodedProduct['createdAt']);
           return decodedProduct;
         }).toList();
       });
     }
-}
+  }
+
+  // Método para subir la imagen a Firebase Storage y obtener la URL
+  Future<String?> _uploadImageToFirebase(File imageFile, String productId) async {
+    try {
+      final storageRef =
+          FirebaseStorage.instance.ref().child('products/$productId.jpg');
+      final uploadTask = await storageRef.putFile(imageFile);
+      final downloadUrl = await uploadTask.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      debugPrint('Error al cargar imagen: $e');
+      return null;
+    }
+  }
 
   void _addNewProductField() {
     setState(() {
@@ -70,10 +87,11 @@ class AddProductScreenState extends State<AddProductScreen> {
         'id': '',
         'netPrice': 0,
         'salePrice': 0,
-        'categoryId': null, // Agregado
-        'subcategoryId': null, // Agregado
-        'subsubcategoryId': null, // Agregado
-        'state': 'Activo', // Agregado
+        'categoryId': null,
+        'subcategoryId': null,
+        'subsubcategoryId': null,
+        'state': 'Activo',
+        'image': null, // Campo para imagen
         'createdAt': Timestamp.now(),
       });
     });
@@ -96,7 +114,7 @@ class AddProductScreenState extends State<AddProductScreen> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return Center(
+        return const Center(
           child: CircularProgressIndicator(),
         );
       },
@@ -105,8 +123,7 @@ class AddProductScreenState extends State<AddProductScreen> {
     try {
       for (var product in products) {
         // Verificar si el ID del producto ya existe
-        bool idExists =
-            await _databaseService.checkIfProductIdExists(product['id']);
+        bool idExists = await _databaseService.checkIfProductIdExists(product['id']);
 
         if (idExists) {
           if (mounted) {
@@ -118,6 +135,21 @@ class AddProductScreenState extends State<AddProductScreen> {
           }
           return;
         }
+
+        // Si hay imágenes seleccionadas, súbelas a Firebase Storage
+        if (product['imageFiles'] != null && product['imageFiles'].isNotEmpty) {
+          List<String> imageUrls = [];
+          for (var imageFile in product['imageFiles']) {
+            String? imageUrl = await _uploadImageToFirebase(File(imageFile.path), product['id']);
+            if (imageUrl != null) {
+              imageUrls.add(imageUrl);
+            }
+          }
+          product['images'] = imageUrls; // Guardar las URLs de las imágenes en la lista
+        }
+
+        // Elimina el campo temporal 'imageFiles' antes de guardar en Firestore
+        product.remove('imageFiles');
 
         await _databaseService.addProduct(product);
       }
@@ -142,6 +174,7 @@ class AddProductScreenState extends State<AddProductScreen> {
             'subcategoryId': null,
             'subsubcategoryId': null,
             'state': 'Activo',
+            'images': [], // Cambiado de 'image' a 'images'
             'createdAt': Timestamp.now(),
           }
         ];
@@ -157,6 +190,8 @@ class AddProductScreenState extends State<AddProductScreen> {
       Navigator.of(context).pop(); // Cierra el diálogo de carga
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {

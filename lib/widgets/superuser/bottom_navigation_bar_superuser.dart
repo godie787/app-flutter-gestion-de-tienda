@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:re_fashion/screens/import_products_screen/import_products_screen.dart';
+
 
 class SuperuserBottomNavigationBar extends StatefulWidget {
   final int selectedIndex;
@@ -25,7 +27,17 @@ class SuperuserBottomNavigationBarState
       selectedItemColor: Colors.teal,
       unselectedItemColor: Colors.grey,
       currentIndex: widget.selectedIndex,
-      onTap: widget.onItemTapped,
+      onTap: (index) {
+        widget.onItemTapped(index);
+
+        // Navegar según el ítem seleccionado
+        if (index == 5) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ImportProductsScreen()),
+          );
+        }
+      },
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home),
@@ -46,6 +58,10 @@ class SuperuserBottomNavigationBarState
         BottomNavigationBarItem(
           icon: Icon(Icons.analytics),
           label: 'Informes',
+        ),
+        BottomNavigationBarItem( // Nueva opción para importar productos
+          icon: Icon(Icons.upload_file),
+          label: 'Importar Productos',
         ),
       ],
     );

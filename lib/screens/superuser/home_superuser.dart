@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:re_fashion/screens/options_navigator/add_products/add_product_screen.dart';
 import 'package:re_fashion/screens/options_navigator/sell_products/sell_product_screen.dart';
 import 'package:re_fashion/screens/options_navigator/reports/reports_screen.dart';
-import 'package:re_fashion/screens/options_navigator/add_sellers/add_sellers_screen.dart';
+import 'package:re_fashion/screens/options_navigator/product_list/product_list_screen.dart';
 import 'package:re_fashion/screens/options_drawer/chistes_fomes.dart';
 
 class SuperuserHome extends StatefulWidget {
@@ -27,7 +27,7 @@ class SuperuserHomeState extends State<SuperuserHome> {
 
   final List<Widget> _pages = [
     const HomeScreen(),
-    const AddSellerScreen(),
+    const ProductListScreen(),
     const AddProductScreen(),
     const SellProductScreen(),
     ReportsScreen(),
@@ -122,10 +122,8 @@ class SuperuserHomeState extends State<SuperuserHome> {
       },
       child: Scaffold(
         appBar: const SuperuserAppBar(
-          title: 'Dashboard',
+          title: '',
           backgroundColor: Colors.teal,
-          leadingIcon: Icons.menu,
-          actions: [Icon(Icons.notifications)],
         ),
         body: IndexedStack(
           index: _selectedIndex,
@@ -159,16 +157,18 @@ class SuperuserHomeState extends State<SuperuserHome> {
                   // Navegar a la vista del perfil
                 },
               ),
+              /*
               ListTile(
-  leading: Icon(Icons.sentiment_very_satisfied),
-  title: Text('Chistes Fomes'),
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const ChistesFomesScreen()),
-    );
-  },
-),
+                leading: Icon(Icons.sentiment_very_satisfied),
+                title: Text('Chistes Fomes'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const ChistesFomesScreen()),
+                  );
+                },
+              ),*/
               ListTile(
                 leading: Icon(Icons.help),
                 title: Text('Soporte'),
